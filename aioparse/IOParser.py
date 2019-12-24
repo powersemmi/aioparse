@@ -1,9 +1,9 @@
 #!/bin/env python3
-from aiolpiogger import Logger
-from collections import deque
+# from aiolpiogger import Logger
 import asyncio
-from asyncio import new_event_loop, get_running_loop, get_event_loop, Future
-from typing import List, Tuple, Callable, Awaitable, Any, TypedDict, Generic, AsyncGenerator, AsyncIterable
+from asyncio import get_event_loop, Future
+from collections import deque
+from typing import List, Tuple, Any, TypedDict, AsyncGenerator
 
 
 # init logger
@@ -43,7 +43,6 @@ class AIOParse:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.logger.debug("GGVP")
-        pass
 
     async def request(self):
         pass

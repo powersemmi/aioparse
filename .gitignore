@@ -100,3 +100,4 @@ ENV/
 .idea/*
 /aioparse/IOParser.py
 ./aioparse/IOParser.py
+Будет удалено exportToHTML/

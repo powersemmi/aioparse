@@ -1,6 +1,6 @@
+lxml
 aiohttp==3.6.2
 astroid==2.3.3
-async-timeout==3.0.1
 attrs==19.3.0
 chardet==3.0.4
 filelock==3.0.12
