@@ -6,7 +6,7 @@ import os
 from asyncio import Future
 from concurrent.futures.process import ProcessPoolExecutor
 from contextlib import suppress
-from typing import List, Callable, Dict, Union, Any, Awaitable
+from typing import List, Callable, Dict, Union, Any, Awaitable, Coroutine
 
 import aiohttp
 from aiohttp import ClientConnectorError, ServerTimeoutError
@@ -63,7 +63,7 @@ class AIOParse:
                 continue
         return []
 
-    async def request(self, client, url) -> Awaitable[Any]:
+    async def request(self, client, url) -> Coroutine[Any, Any, Any]:
         """
         :param client:
         :param url:
@@ -85,33 +85,37 @@ class AIOParse:
             except ServerTimeoutError:
                 await self.logger.debug(f"[GET] ServerTimeoutError {url} ERROR")
                 continue
+            except AssertionError:
+                await self.logger.debug(f"[GET] AssertionError {url} ERROR")
+                continue
         return result
 
     async def crawl(self, future: Union[List[Union[str, Awaitable[Any]]], Awaitable[Any], Any],
                     client, pool) -> None:
         """
-        :param future:
-        :param client:
-        :param pool:
-        :return:
+        Recurse method for parse in depth
+        :param future: future with urls or list with urls
+        :param client: TCP session client
+        :param pool: Concurrent thread pool
         """
-        futures: Any = []
-        # Получаем из футуры ссылки
+        futures: Any = []  # coroutines waiting list
         if isinstance(future, Future):
-            await self.crawl_loop(await future, client, pool, futures)
+            corut: List[str] = await future
+            await self.crawl_loop(corut, client, pool, futures)
         elif isinstance(future, List):
             # Выгребаем для каждой ссылки разметку страницы
             for urls_list in future:
-                await self.crawl_loop(urls_list, client, pool, futures)
+                if isinstance(urls_list, str):
+                    await self.crawl_loop([urls_list], client, pool, futures)
+                elif isinstance(urls_list, List):
+                    await self.crawl_loop(urls_list, client, pool, futures)
 
-    async def crawl_loop(self, urls_list, client, pool,
-                         futures: Any):
+    async def crawl_loop(self, urls_list: List[str], client, pool, futures: Any):
         """
         :param urls_list:
         :param client:
         :param pool:
         :param futures:
-        :return:
         """
         for request_future in asyncio.as_completed([self.request(client, url) for url in urls_list]):
             parse_future = await self.parse(await request_future)
@@ -122,7 +126,8 @@ class AIOParse:
 
     async def _main(self) -> None:
         """
-        :return:
+        Method init process poll, TCP session client, create future with root urls
+        and run crawl parsing function
         """
         # Создаём пул потоков по количеству процессоров
         with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
@@ -138,7 +143,7 @@ class AIOParse:
 
     def main(self) -> None:
         """
-        :return:
+        This method run asyncio event loop
         """
         try:
             self.event_loop.run_until_complete(self._main())
@@ -152,18 +157,4 @@ class AIOParse:
 
 
 if __name__ == '__main__':
-    async def parser_1st_layer(page: str):
-        """
-        pass
-        :param page:
-        :return:
-        """
-        with open("google_dode.txt", "w", encoding="utf-8") as file:
-            file.writelines(page)
-
-
-    URLS = ["https://google.com/", "https://google.com/"]
-    FUNCTS = {"//p": parser_1st_layer}
-    MAIN = AIOParse(root_urls=URLS, parse_funcs=FUNCTS)
-
-    MAIN.main()
+    pass
