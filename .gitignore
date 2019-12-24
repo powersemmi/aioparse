@@ -99,3 +99,5 @@ ENV/
 .mypy_cache/
 .idea/*
 exemple_material
+Будет удалено exportToHTML/
+/exemple_material/*
