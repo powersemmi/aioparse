@@ -98,8 +98,4 @@ ENV/
 # mypy
 .mypy_cache/
 .idea/*
-/aioparse/IOParser.py
-./aioparse/IOParser.py
-/exportToHTML/
-/aioparse/borg_test.py
-/aioparse/async_test.py
+exemple_material
