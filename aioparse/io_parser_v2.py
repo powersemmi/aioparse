@@ -6,7 +6,7 @@ import os
 from asyncio import Future
 from concurrent.futures.process import ProcessPoolExecutor
 from contextlib import suppress
-from typing import List, Callable, Dict, Union, Any, AsyncGenerator, Awaitable
+from typing import List, Callable, Dict, Union, Any, Awaitable
 
 import aiohttp
 from aiohttp import ClientConnectorError, ServerTimeoutError
@@ -29,31 +29,39 @@ class AIOParse:
         self.parse_funcs: Dict[str, Callable] = parse_funcs
         self.logger = Logger.with_default_handlers()
 
-    async def parse(self, page: Union[str, List[str]]) -> AsyncGenerator[AsyncGenerator[str, None], Any]:
+    async def parse(self, page: Union[str, List[str]]) -> List[Union[List[str], str]]:
         """
         :param page:
         :return:
         """
-        await self.logger.debug(f"[PARSER] START")
         if isinstance(page, str):
-            async for i in self.func_runner(page):
-                yield i
+            await self.logger.debug(f"[PARSER] START STR")
+            return await self.func_runner(page)
         elif isinstance(page, List):
-            for i in page:
-                async for z in self.func_runner(page):
-                    yield z
+            await self.logger.debug(f"[PARSER] START LIST")
+            pages = []
+            for request_future in asyncio.as_completed([self.func_runner(i) for i in page]):
+                pages.append(request_future)
+            return pages
         else:
             await asyncio.sleep(0)
+            return []
 
-    async def func_runner(self, page) -> Union[AsyncGenerator[str, None], Any]:
+    async def func_runner(self, page: str) -> Union[List[str], str]:
         """
         :param page:
         :return:
         """
+        self.logger.debug("[func_runner] Start")
         tree: html.HtmlElement = html.fromstring(page)
         for key, val in self.parse_funcs.items():
             if tree.xpath(key):
-                yield val(page)
+                urls = await val(page)
+                if isinstance(urls, (List, str)):
+                    return urls
+            else:
+                continue
+        return []
 
     async def request(self, client, url) -> Awaitable[Any]:
         """
@@ -105,12 +113,8 @@ class AIOParse:
         :param futures:
         :return:
         """
-        for request_future in asyncio.as_completed([await self.request(client, url) for url in urls_list]):
-            await self.logger.debug("im here")
-            parse_future: List[Union[str, List[str]]] = []
-            async for i in self.parse(await request_future):
-                async for z in i:
-                    parse_future.append(z)
+        for request_future in asyncio.as_completed([self.request(client, url) for url in urls_list]):
+            parse_future = await self.parse(await request_future)
 
             futures.append(asyncio.ensure_future(self.crawl(parse_future, client, pool)))
         if futures:
@@ -155,7 +159,7 @@ if __name__ == '__main__':
         :return:
         """
         with open("google_dode.txt", "w", encoding="utf-8") as file:
-            file.write("Google is doode")
+            file.writelines(page)
 
 
     URLS = ["https://google.com/", "https://google.com/"]
