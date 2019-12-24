@@ -100,4 +100,6 @@ ENV/
 .idea/*
 /aioparse/IOParser.py
 ./aioparse/IOParser.py
-Будет удалено exportToHTML/
+/exportToHTML/
+/aioparse/borg_test.py
+/aioparse/async_test.py
