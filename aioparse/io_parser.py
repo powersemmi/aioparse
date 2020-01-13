@@ -1,12 +1,16 @@
+#!/bin/env python3.8
+# -*-coding: utf-8-*-
 """
-AIOParser
+autor: powersemmi (Chebotarev Victor)
+email: powersemmi@gmail.com
+telegram: powersemmi
 """
 import asyncio
 import os
 from asyncio import Future
 from concurrent.futures.process import ProcessPoolExecutor
 from contextlib import suppress
-from typing import List, Callable, Dict, Union, Any, Awaitable, Coroutine
+from typing import List, Callable, Dict, Union, Any, Awaitable
 
 import aiohttp
 from aiohttp import ClientConnectorError, ServerTimeoutError
@@ -16,41 +20,41 @@ from lxml import html
 
 class AIOParse:
     """
-    tralala
+    AIOParser is a async universal parser
     """
 
     def __init__(self, root_urls: List[str], parse_funcs: Dict[str, Callable]) -> None:
         """
-        :param root_urls:
-        :param parse_funcs:
+        :param root_urls: urls for root parsing
+        :param parse_funcs: funcs for parse and parse in depth, one by one
         """
         self.event_loop = asyncio.get_event_loop()
         self.root_urls: List[str] = root_urls
         self.parse_funcs: Dict[str, Callable] = parse_funcs
         self.logger = Logger.with_default_handlers()
 
-    async def parse(self, page: Union[str, List[str]]) -> List[Union[List[str], str]]:
+    async def parse(self, page: Union[str, List[str], Future[Any]]) -> Union[List[str], str, List[Future], list]:
         """
-        :param page:
-        :return:
+        :param page: raw page content
+        :return: url or list of urls or list of future with urls or etc
         """
         if isinstance(page, str):
             await self.logger.debug(f"[PARSER] START STR")
             return await self.func_runner(page)
-        elif isinstance(page, List):
+        if isinstance(page, List):
             await self.logger.debug(f"[PARSER] START LIST")
             pages = []
             for request_future in asyncio.as_completed([self.func_runner(i) for i in page]):
                 pages.append(request_future)
             return pages
-        else:
-            await asyncio.sleep(0)
-            return []
+        await asyncio.sleep(0)
+        return []
 
     async def func_runner(self, page: str) -> Union[List[str], str]:
         """
-        :param page:
-        :return:
+        Function for run selected functions on selected pages by xpath
+        :param page: raw page content
+        :return: url or list of urls or list of future with urls or etc
         """
         self.logger.debug("[func_runner] Start")
         tree: html.HtmlElement = html.fromstring(page)
@@ -63,10 +67,10 @@ class AIOParse:
                 continue
         return []
 
-    async def request(self, client, url) -> Coroutine[Any, Any, Any]:
+    async def request(self, client, url) -> Future:
         """
-        :param client:
-        :param url:
+        :param client: HTTP async client
+        :param url: url
         :return:
         """
         # time.sleep(0.1)
@@ -112,12 +116,14 @@ class AIOParse:
 
     async def crawl_loop(self, urls_list: List[str], client, pool, futures: Any):
         """
+        Loop for crawl in depth
         :param urls_list:
         :param client:
         :param pool:
         :param futures:
         """
-        for request_future in asyncio.as_completed([self.request(client, url) for url in urls_list]):
+        for request_future in asyncio.as_completed([self.request(client, url)
+                                                    for url in urls_list]):
             parse_future = await self.parse(await request_future)
 
             futures.append(asyncio.ensure_future(self.crawl(parse_future, client, pool)))
@@ -143,7 +149,7 @@ class AIOParse:
 
     def main(self) -> None:
         """
-        This method run asyncio event loop
+        This method run/stop asyncio event loop
         """
         try:
             self.event_loop.run_until_complete(self._main())
@@ -154,7 +160,3 @@ class AIOParse:
                     self.event_loop.run_until_complete(task)
         finally:
             self.event_loop.close()
-
-
-if __name__ == '__main__':
-    pass

@@ -98,6 +98,5 @@ ENV/
 # mypy
 .mypy_cache/
 .idea/*
-exemple_material
-Будет удалено exportToHTML/
-/exemple_material/*
+exemple_material/*
+.dmypy.json
