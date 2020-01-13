@@ -9,6 +9,7 @@ import asyncio
 from glob import glob
 from typing import List, Dict, Any, Iterator
 import re
+import os
 
 import aiofiles
 
@@ -19,9 +20,6 @@ class OpenVpn:
     def __init__(self) -> None:
         self.char_counter = None
         self.data: List[Dict[str, List[str]]] = []
-        self._char_counter: int = 0
-        self._status: int = 0
-        self._word_counter: int = 0
         self.__conf_list: List[str] = []
 
     def __new__(cls):
@@ -35,22 +33,25 @@ class OpenVpn:
     def __getitem__(self, item) -> Any:
         return self.data[item]
 
-    def __setitem__(self, data_id: int, value: Any) -> None:
+    def __setitem__(self, data_id: int, value: Dict[str, List[str]]) -> None:
         self.data[data_id] = value
+        self.data[data_id]["hide_type"] = ["OpenVpn"]
 
     def __iter__(self) -> Iterator:
         for i in self.data:
             yield i
 
-    def __add__(self, other: List[Any]):
+    def __add__(self, other: Dict[str, List[str]]):
         # if self + list then self.data.append(list)
         self.append(other)
 
-    def append(self, val: Any) -> None:
+    def append(self, value: Dict[str, List[str]]) -> None:
         """
-        :param val: add vpn conf to self
+        :param value: add vpn conf to self
         """
-        self.data.append(val)
+        value["hide_type"] = ["OpenVpn"]
+        self.data.append(value)
+        self.save_config_files("/tmp")
 
     def pop(self, data_id: int) -> None:
         """
@@ -66,16 +67,18 @@ class OpenVpn:
         """
         self.data.remove(val)
 
-    def __next_char(self):
-        self.char_counter += 1
-
     def _parse_conf(self):
-        self._char_counter = 0
-        self._status = 0
-        self._word_counter = 0
         for i in self.__conf_list:
             self.__parse_conf(i)
         self.__conf_list = []
+
+    def add_pram_with_all_config(self, conf_id: int, pram: str, values: List[Any]):
+        assert self.data[conf_id]
+        for i in values:
+            data_copy = self.data[conf_id].copy()
+            data_copy[pram] = i
+            self.data.append(data_copy)
+        self.save_config_files("/tmp")
 
     def __parse_conf(self, conf_text: str) -> None:
         conf: List[str] = conf_text.split("\n")
@@ -106,12 +109,34 @@ class OpenVpn:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self._start_loading_files(files))
         self._parse_conf()
+        self.save_config_files("/tmp")
+
+    def save_config_files(self, path_to_folder: str):
+        """
+        :param path_to_folder:
+        :return:
+        """
+        if not os.path.isdir(path_to_folder):
+            assert os.path.isdir(path_to_folder), "The path is not to the folder"
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self._start_saving_files(path_to_folder))
+
+    async def _start_saving_files(self, folder):
+        await asyncio.gather(*(self._async_saving_file(i, data, folder) for i, data in enumerate(self.data)))
+
+    async def _async_saving_file(self, iterator: int, data: Dict[str, List[str]], folder):
+        path = f'{folder}/{iterator}-{data["remote"][0]}'
+        self.data[iterator]["path_to_conf"] = [path]
+        async with aiofiles.open(path, mode='w') as file:
+            async for line in file:
+                data += line
 
     async def _start_loading_files(self, files):
-        result = asyncio.gather(*(self._async_loading_file(i) for i in files))
+        result = await asyncio.gather(*(self._async_loading_file(i) for i in files))
         self.__conf_list = result
 
-    async def _async_loading_file(self, path):
+    @staticmethod
+    async def _async_loading_file(path):
         data = ""
         async with aiofiles.open(path, mode='r') as file:
             async for line in file:
