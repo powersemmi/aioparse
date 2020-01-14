@@ -24,9 +24,12 @@ class HideRandomizer:
         self.__current_hide: Dict[str, List[str]] = {}
         self.__hide_may_using: List[Dict[str, List[str]]] = []
         self.__conn_on: bool = False
+        self.__vpn_proc = None
         self.supported_types = ["OpenVpn"]
         if open_vpn is None:
             self._open_vpn = "/usr/bin/openvpn"
+        else:
+            self._open_vpn = open_vpn
 
     def randomize_hide(self):
         if not self.__hide_may_using:
@@ -40,7 +43,7 @@ class HideRandomizer:
     def add_hide_list(self, hide_list: List[Dict[str, List[str]]]):
         assert hide_list
         for iterator, value in enumerate(hide_list):
-            assert value["hide_type"] in self.supported_types, f"{iterator} connection not in supported"
+            assert value["hide_type"][0] in self.supported_types, f"{iterator} {value['hide_type']} connection not in supported"
         self.data += hide_list
 
     def get_current_hide(self):
@@ -56,12 +59,15 @@ class HideRandomizer:
         :return:
         """
         assert self.data, "Add hide!"
+        if self.__vpn_proc is not None:
+            self.stop_connection()
         self.randomize_hide()
-        if self.__current_hide["hide_type"] == "OpenVpn":
-            subprocess.Popen(f"{self._open_vpn} --connect {self.__current_hide['path_to_conf']}", stdout=FNULL,
-                             stderr=FNULL, shell=False, close_fds=True)
+        command = f"{self._open_vpn} --config {self.__current_hide['path_to_conf'][0]}"
+        print(command)
+        if self.__current_hide["hide_type"][0] == "OpenVpn":
+            self.__vpn_proc = subprocess.Popen(command.split(), shell=False, close_fds=True)
         else:
-            assert self.__current_hide in self.supported_types, "Selected connection not in supported"
+            assert self.__current_hide["hide_type"][0] in self.supported_types, "Selected connection not in supported"
 
     def stop_connection(self):
         """
@@ -69,8 +75,8 @@ class HideRandomizer:
         pkill -SIGTERM -f
         """
         assert self.data, "Add hide!"
-        if self.__current_hide["hide_type"] == "OpenVpn":
-            subprocess.Popen(f"pkill -SIGTERM -f \'{self._open_vpn} --connect {self.__current_hide['path_to_conf']}\'",
-                             stdout=FNULL, stderr=FNULL, shell=False, close_fds=True)
+        if self.__current_hide["hide_type"][0] == "OpenVpn":
+            if self.__vpn_proc is not None:
+                self.__vpn_proc.kill()
         else:
-            assert self.__current_hide in self.supported_types, "Selected connection not in supported"
+            assert self.__current_hide["hide_type"][0] in self.supported_types, "Selected connection not in supported"

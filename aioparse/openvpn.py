@@ -51,7 +51,7 @@ class OpenVpn:
         """
         value["hide_type"] = ["OpenVpn"]
         self.data.append(value)
-        self.save_config_files("/tmp")
+        self.save_config_files("/tmp/io_hide")
 
     def pop(self, data_id: int) -> None:
         """
@@ -78,7 +78,7 @@ class OpenVpn:
             data_copy = self.data[conf_id].copy()
             data_copy[pram] = i
             self.data.append(data_copy)
-        self.save_config_files("/tmp")
+        self.save_config_files("/tmp/io_hide")
 
     def __parse_conf(self, conf_text: str) -> None:
         conf: List[str] = conf_text.split("\n")
@@ -106,16 +106,21 @@ class OpenVpn:
         :return:
         """
         files = glob(glob_path)
+        # print(files)
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self._start_loading_files(files))
         self._parse_conf()
-        self.save_config_files("/tmp")
+        self.save_config_files("/tmp/io_hide")
 
     def save_config_files(self, path_to_folder: str):
         """
         :param path_to_folder:
         :return:
         """
+        try:
+            os.mkdir(path_to_folder)
+        except FileExistsError:
+            pass
         if not os.path.isdir(path_to_folder):
             assert os.path.isdir(path_to_folder), "The path is not to the folder"
         loop = asyncio.get_event_loop()
@@ -125,11 +130,18 @@ class OpenVpn:
         await asyncio.gather(*(self._async_saving_file(i, data, folder) for i, data in enumerate(self.data)))
 
     async def _async_saving_file(self, iterator: int, data: Dict[str, List[str]], folder):
+        # print(data)
         path = f'{folder}/{iterator}-{data["remote"][0]}'
+        try:
+            del self.data[iterator]["path_to_conf"]
+            del self.data[iterator]["hide_type"]
+        except KeyError:
+            pass
+        with open(path, mode='w') as file:
+            for key, val in self.data[iterator].items():
+                file.write(key + " " + " ".join(val) + "\n")
         self.data[iterator]["path_to_conf"] = [path]
-        async with aiofiles.open(path, mode='w') as file:
-            async for line in file:
-                data += line
+        self.data[iterator]["hide_type"] = ["OpenVpn"]
 
     async def _start_loading_files(self, files):
         result = await asyncio.gather(*(self._async_loading_file(i) for i in files))
