@@ -10,6 +10,7 @@ import random
 import subprocess
 from typing import Dict, List
 
+from user_agent import generate_user_agent
 
 FNULL = open(os.devnull, 'w')
 
@@ -18,6 +19,10 @@ class HideRandomizer:
     """
     TODO: Write with other time!
     """
+
+    @staticmethod
+    def generate_user_agent(*args, **kwargs):
+        generate_user_agent(*args, **kwargs)
 
     def __init__(self, open_vpn: str = None):
         self.data: List[Dict[str, List[str]]] = []

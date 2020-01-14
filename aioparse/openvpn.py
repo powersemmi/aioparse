@@ -121,8 +121,7 @@ class OpenVpn:
             os.mkdir(path_to_folder)
         except FileExistsError:
             pass
-        if not os.path.isdir(path_to_folder):
-            assert os.path.isdir(path_to_folder), "The path is not to the folder"
+        assert os.path.isdir(path_to_folder), "The path is not to the folder"
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self._start_saving_files(path_to_folder))
 

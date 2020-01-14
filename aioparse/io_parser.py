@@ -17,6 +17,8 @@ from aiohttp import ClientConnectorError, ServerTimeoutError
 from aiologger import Logger
 from lxml import html
 
+from user_agent import generate_navigator
+
 
 class AIOParse:
     """
@@ -139,7 +141,8 @@ class AIOParse:
         with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
             # Создаём клиентскую сессию
             conn = aiohttp.TCPConnector()
-            async with aiohttp.ClientSession(connector=conn) as client:
+            headers = generate_navigator()
+            async with aiohttp.ClientSession(connector=conn, headers=headers) as client:
                 # Создаём корневую футуру
                 initial_future = self.event_loop.create_future()
                 # Помещаем в неё ссылки, с которых начнём парсить
