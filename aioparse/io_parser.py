@@ -33,7 +33,7 @@ class AIOParse:
         self.parse_funcs: Dict[str, Callable] = parse_funcs
         self.logger = Logger.with_default_handlers()
 
-    async def parse(self, page: Union[str, List[str], Future[Any]]) -> Union[List[str], str, List[Future], list]:
+    async def parse(self, page: Union[str, List[str], Future]) -> Union[List[str], str, List[Future]]:
         """
         :param page: raw page content
         :return: url or list of urls or list of future with urls or etc
