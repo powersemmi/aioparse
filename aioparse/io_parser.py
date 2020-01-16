@@ -7,6 +7,7 @@ telegram: powersemmi
 """
 import asyncio
 import os
+import ssl
 from asyncio import Future
 from concurrent.futures.process import ProcessPoolExecutor
 from contextlib import suppress
@@ -18,6 +19,8 @@ from aiologger import Logger
 from lxml import html
 
 from user_agent import generate_navigator
+
+SSLCONTEXT = ssl.create_default_context(cafile='/home/powersemmi/PycharmProjects/aioparse/aioparse/crawlera-ca.crt')
 
 
 class AIOParse:
@@ -80,7 +83,9 @@ class AIOParse:
         while True:
             # await sleep(0.1)
             try:
-                async with client.get(url) as resp:
+                async with client.get(url,
+                                      proxy="http://d7b708eed01c4c808ac52dab2f4420c8:@proxy.crawlera.com:8010/",
+                                      ssl=SSLCONTEXT) as resp:
                     assert resp.status == 200
                     result: asyncio.Future[Any] = await resp.text()
                 await self.logger.debug(f"[GET] {url} success")
@@ -140,9 +145,9 @@ class AIOParse:
         # Создаём пул потоков по количеству процессоров
         with ProcessPoolExecutor(max_workers=os.cpu_count()) as pool:
             # Создаём клиентскую сессию
-            conn = aiohttp.TCPConnector()
-            headers = generate_navigator()
-            async with aiohttp.ClientSession(connector=conn, headers=headers) as client:
+            conn = aiohttp.TCPConnector(limit=10)
+            # headers = generate_navigator()
+            async with aiohttp.ClientSession(connector=conn) as client:
                 # Создаём корневую футуру
                 initial_future = self.event_loop.create_future()
                 # Помещаем в неё ссылки, с которых начнём парсить
