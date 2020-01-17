@@ -37,6 +37,7 @@ class AIOParse:
         self.root_urls: List[str] = root_urls
         self.parse_funcs: Dict[str, Callable] = parse_funcs
         self.logger = Logger.with_default_handlers()
+        self.current_url = ""
 
     async def parse(self, page: Union[str, List[str], Future]) -> Union[List[str], str, List[Future]]:
         """
@@ -46,12 +47,13 @@ class AIOParse:
         if isinstance(page, str):
             await self.logger.debug(f"[PARSER] START STR")
             return await self.func_runner(page)
-        if isinstance(page, List):
+        elif isinstance(page, List):
             await self.logger.debug(f"[PARSER] START LIST")
             pages = []
             for request_future in asyncio.as_completed([self.func_runner(i) for i in page]):
                 pages.append(request_future)
             return pages
+
         await asyncio.sleep(0)
         return []
 
@@ -65,7 +67,7 @@ class AIOParse:
         tree: html.HtmlElement = html.fromstring(page)
         for key, val in self.parse_funcs.items():
             if tree.xpath(key):
-                urls = await val(page)
+                urls = await val(page, self.current_url)
                 if isinstance(urls, (List, str)):
                     return urls
             else:
@@ -83,6 +85,7 @@ class AIOParse:
         while True:
             # await sleep(0.1)
             try:
+                self.current_url = url
                 async with client.get(url,
                                       proxy="http://d7b708eed01c4c808ac52dab2f4420c8:@proxy.crawlera.com:8010/",
                                       ssl=SSLCONTEXT) as resp:
