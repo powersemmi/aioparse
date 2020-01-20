@@ -93,7 +93,7 @@ class AIOParse:
             try:
                 self.current_url = url
                 async with client.get(url,
-                                      proxy="http://d7b708eed01c4c808ac52dab2f4420c8:@proxy.crawlera.com:8010/",
+                                      proxy="http://236ad54be05a421684cf718513ba2a0e:@proxy.crawlera.com:8010/",
                                       ssl=SSLCONTEXT) as resp:
                     assert resp.status == 200
                     result: asyncio.Future[Any] = await resp.text()
