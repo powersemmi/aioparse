@@ -17,11 +17,11 @@ FNULL = open(os.devnull, 'w')
 
 class HideRandomizer:
     """
-    TODO: Write with other time!
+        TODO: Write with other time!
     """
 
     @staticmethod
-    def generate_user_agent(*args, **kwargs):
+    def generate_user_agent(*args, **kwargs:
         generate_user_agent(*args, **kwargs)
 
     def __init__(self, open_vpn: str = None):
@@ -48,7 +48,8 @@ class HideRandomizer:
     def add_hide_list(self, hide_list: List[Dict[str, List[str]]]):
         assert hide_list
         for iterator, value in enumerate(hide_list):
-            assert value["hide_type"][0] in self.supported_types, f"{iterator} {value['hide_type']} connection not in supported"
+            message = f"{iterator} {value['hide_type']} connection not in supported"
+            assert value["hide_type"][0] in self.supported_types, message
         self.data += hide_list
 
     def get_current_hide(self):

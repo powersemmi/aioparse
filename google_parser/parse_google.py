@@ -84,7 +84,7 @@ async def cities(page: str, current_url) -> Union[List[str], None]:
 
 
 if __name__ == '__main__':
-    # KEYWORDS = ['промышленность', 'обрабатывающая промышленность', 'добывающая промышленность',
+    # KEYWORDS  ['промышленность', 'обрабатывающая промышленность', 'добывающая промышленность',
     # 'производство', 'мощность', 'предприятие', 'технопарк']
     KEYWORDS = ['промышленность']
     URLS = [f"https://scholar.google.com/scholar?&q={urllib.parse.quote_plus(i)}" for i in KEYWORDS]
